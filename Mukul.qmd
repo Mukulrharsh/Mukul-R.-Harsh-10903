@@ -1,0 +1,133 @@
+---
+title: "UNICEF Global HPV Vaccination and Socioeconomic Indicators Analysis"
+subtitle: "Spring 2025 BAA1030 Data Analytics & Story Telling (20074)"
+author: "Mukul Harsh(A00010903)"
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    embed-resources: true
+    df-print: paged
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    smooth-scroll: true
+    page-layout: full
+    self-contained: true
+execute:
+  echo: true
+  eval: true
+jupyter: python3
+---
+
+# UNICEF Global HPV Vaccination and Socioeconomic Indicators Analysis
+
+This report analyzes HPV vaccination rates and socioeconomic indicators across countries using UNICEF datasets. It explores how economic development and healthcare initiatives impact children's health globally.
+
+## Load Libraries
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+```
+
+## Load and Prepare Data
+
+```{python}
+# Load datasets
+indicator_1 = pd.read_csv('unicef_indicator_1.csv')
+indicator_2 = pd.read_csv('unicef_indicator_2.csv')
+metadata = pd.read_csv('unicef_metadata.csv')
+
+# Combine indicator datasets
+indicators = pd.concat([indicator_1, indicator_2])
+
+# Focus on HPV vaccination indicator
+hpv_vaccination = indicators[indicators['indicator'] == 'Percentage of females who received the last dose of human papillomavirus (HPV) vaccine per national schedule']
+
+# Merge with metadata
+merged = pd.merge(metadata, hpv_vaccination, left_on='alpha_3_code', right_on='alpha_3_code', how='left')
+
+# Clean the merged data
+merged = merged.dropna(subset=['obs_value'])
+```
+
+# 1. Top 10 Countries by HPV Vaccination Rate
+
+This bar plot highlights the top 10 countries with the highest HPV vaccination rates among females, indicating strong public health systems.
+
+```{python}
+latest_year = hpv_vaccination['time_period'].max()
+latest_hpv = hpv_vaccination[hpv_vaccination['time_period'] == latest_year]
+top10_hpv = latest_hpv.sort_values('obs_value', ascending=False).head(10)
+
+plt.figure(figsize=(12,6))
+sns.barplot(x='country', y='obs_value', data=top10_hpv)
+plt.xticks(rotation=45)
+plt.title('Top 10 Countries by HPV Vaccination Rate')
+plt.xlabel('Country')
+plt.ylabel('HPV Vaccination Rate (%)')
+plt.tight_layout()
+plt.show()
+```
+
+# 2. Global Average HPV Vaccination Over Time
+
+This line plot tracks the global average HPV vaccination rate over time, highlighting global healthcare progress.
+
+```{python}
+global_hpv_trend = hpv_vaccination.groupby('time_period')['obs_value'].mean()
+
+plt.figure(figsize=(10,5))
+plt.plot(global_hpv_trend.index, global_hpv_trend.values, marker='o')
+plt.title('Global Average HPV Vaccination Over Time')
+plt.xlabel('Year')
+plt.ylabel('Average HPV Vaccination Rate (%)')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+# 3. GDP per Capita vs HPV Vaccination Rate
+
+This scatter plot illustrates the relationship between GDP per capita and HPV vaccination rates, linking economic status and healthcare outcomes.
+
+```{python}
+scatter_data = merged[['country_x', 'GDP per capita (constant 2015 US$)', 'obs_value']].dropna()
+
+plt.figure(figsize=(10,6))
+sns.scatterplot(
+    x='GDP per capita (constant 2015 US$)',
+    y='obs_value',
+    data=scatter_data)
+plt.title('GDP per Capita vs HPV Vaccination Rate')
+plt.xlabel('GDP per Capita (US$)')
+plt.ylabel('HPV Vaccination Rate (%)')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+# 4. Correlation Matrix of Key Health and Economic Indicators
+
+This heatmap displays the correlations between GDP per capita, HPV vaccination, hospital infrastructure, birth rate, and population.
+
+```{python}
+heatmap_data = merged[['GDP per capita (constant 2015 US$)', 
+                       'Population, total',
+                       'Hospital beds (per 1,000 people)',
+                       'Birth rate, crude (per 1,000 people)',
+                       'obs_value']]
+
+plt.figure(figsize=(10,8))
+sns.heatmap(heatmap_data.corr(), annot=True, cmap='coolwarm', linewidths=0.5)
+plt.title('Correlation Matrix of Health and Economic Indicators')
+plt.tight_layout()
+plt.show()
+```
+
+# Conclusion
+
+The analysis shows a positive correlation between national wealth and HPV vaccination coverage. Countries with higher GDP per capita generally achieve broader healthcare access, leading to better vaccination rates and health outcomes. Bridging the gap in healthcare infrastructure is crucial for improving children's health and ensuring equitable development globally.
